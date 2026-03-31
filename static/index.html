@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>JogBuddy</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #030712; --surface: #0f172a; --border: #1e293b;
+    --blue: #38bdf8; --purple: #818cf8; --text: #e2e8f0;
+    --muted: #6b7280; --green: #22c55e; --red: #ef4444; --amber: #f59e0b;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; padding: 0 0 60px; }
+  .app { max-width: 460px; margin: 0 auto; padding: 16px 14px; }
+
+  .header { text-align: center; padding: 10px 0 4px; }
+  .title  { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; color: #f1f5f9; letter-spacing: -0.5px; }
+  .sub    { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .tabs { display: flex; gap: 6px; margin: 12px 0 10px; }
+  .tab  { flex: 1; padding: 9px 4px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border);
+          font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; text-align: center; transition: all .2s; }
+  .tab.active { background: #0c1a2e; border-color: var(--blue); color: var(--blue); }
+  .panel { display: none; } .panel.active { display: block; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin: 8px 0; }
+  .card-label { font-size: 11px; color: var(--blue); text-transform: uppercase; letter-spacing: .1em; font-weight: 500; margin-bottom: 8px; }
+
+  input[type="text"], input[type="number"] {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; font-size: 14px; color: var(--text); font-family: 'DM Sans', sans-serif; outline: none;
+  }
+  input[type="text"]:focus, input[type="number"]:focus { border-color: var(--blue); }
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .input-group label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; }
+
+  .btn { width: 100%; padding: 15px; border-radius: 50px; font-family: 'Syne', sans-serif; font-weight: 700;
+         font-size: 16px; border: none; cursor: pointer; transition: transform .1s; margin-top: 10px; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: linear-gradient(135deg, var(--blue), var(--purple)); color: #fff; }
+  .btn-danger  { background: #1c0a0a; border: 1px solid var(--red); color: var(--red); margin-top: 8px; }
+  .btn-sm { width: auto; padding: 8px 18px; font-size: 13px; border-radius: 50px; border: 1px solid var(--border);
+            background: var(--surface); color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 10px 0; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 6px; text-align: center; }
+  .stat-val  { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; color: var(--blue); line-height: 1; margin-bottom: 3px; }
+  .stat-lbl  { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+
+  .stat-grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin: 6px 0; }
+  .stat-card-sm { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 9px 4px; text-align: center; }
+  .stat-val-sm  { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: var(--purple); line-height: 1; margin-bottom: 2px; }
+  .stat-lbl-sm  { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+  .prog-wrap  { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; margin: 6px 0; }
+  .prog-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 7px; }
+  .prog-bg    { background: #1e293b; border-radius: 99px; height: 10px; overflow: hidden; }
+  .prog-fill  { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--blue), var(--purple)); transition: width .6s ease; }
+
+  .player-card { background: var(--surface); border: 1px solid #1e3a5f; border-radius: 16px; padding: 16px; margin: 8px 0; }
+  .now-tag    { font-size: 10px; color: var(--blue); text-transform: uppercase; letter-spacing: .12em; font-weight: 500; margin-bottom: 6px; }
+  .book-title { font-size: 15px; color: var(--text); font-weight: 500; margin-bottom: 12px; word-break: break-word; }
+  audio { width: 100%; border-radius: 10px; margin-top: 4px; }
+
+  .status-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 8px 0; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dot-moving  { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 1.2s infinite; }
+  .dot-stopped { background: var(--red); }
+  .dot-waiting { background: var(--amber); }
+  .status-txt { font-size: 13px; color: var(--muted); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  .motion-bar-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 6px 0; }
+  .motion-label { font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .motion-bg   { background: #1e293b; border-radius: 99px; height: 8px; overflow: hidden; }
+  .motion-fill { height: 100%; border-radius: 99px; background: var(--green); transition: width .1s; }
+
+  .milestone { background: linear-gradient(135deg,#0c1a2e,#1a0c2e); border: 1px solid var(--purple);
+               border-radius: 16px; padding: 16px; text-align: center; margin: 8px 0; display: none; }
+  .milestone.show { display: block; }
+  .milestone-txt { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: #e0e7ff; }
+  .milestone-sub { font-size: 13px; color: #a5b4fc; margin-top: 4px; }
+
+  .notice { border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.6; margin: 8px 0; display: none; }
+  .notice-amber { background: #1c1304; border: 1px solid var(--amber); color: #fde68a; display: block; }
+  .notice-red   { background: #1c0505; border: 1px solid var(--red); color: #fca5a5; }
+  .notice-green { background: #052e16; border: 1px solid var(--green); color: #86efac; }
+
+  .source-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin: 8px 0; }
+  .source-name { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .source-desc { font-size: 12px; color: var(--muted); margin-bottom: 8px; line-height: 1.55; }
+  .source-link { font-size: 12px; color: var(--blue); word-break: break-all; text-decoration: none; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 500; margin-right: 4px; margin-bottom: 6px; }
+  .badge-free  { background: #052e16; color: #86efac; border: 1px solid #166534; }
+  .badge-paid  { background: #1c1a04; color: #fde68a; border: 1px solid #78350f; }
+  .how-box { background: #060f1e; border-left: 2px solid var(--blue); border-radius: 0 8px 8px 0; padding: 10px 12px; margin-top: 8px; }
+  .how-title { font-size: 11px; color: var(--blue); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; font-weight: 500; }
+  .how-step  { font-size: 12px; color: #94a3b8; margin: 4px 0; line-height: 1.5; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+  .section-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--text); margin: 14px 0 8px; }
+  input[type="range"] { width: 100%; accent-color: var(--blue); }
+  code { font-family: monospace; color: #c4b5fd; font-size: 13px; }
+
+  /* Debug panel */
+  .debug-box { background: #060f1e; border: 1px solid #1e293b; border-radius: 10px; padding: 10px 12px; margin: 6px 0;
+               font-family: monospace; font-size: 12px; color: #64748b; line-height: 1.8; }
+  .debug-val { color: #38bdf8; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="title">🏃 JogBuddy</div>
+    <div class="sub">Audiobook plays when you move · Pauses when you stop</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('play',this)">▶ Play</div>
+    <div class="tab" onclick="showTab('books',this)">📚 Books</div>
+    <div class="tab" onclick="showTab('settings',this)">⚙️ Settings</div>
+  </div>
+
+  <!-- ═══ PLAY TAB ═══ -->
+  <div class="panel active" id="tab-play">
+
+    <!-- SETUP VIEW -->
+    <div id="setup-view">
+      <div id="sensor-warning" class="notice notice-amber">
+        ⚠️ <strong>Checking motion sensor access…</strong><br/>
+        On Android: make sure you're on <strong>http://</strong> not https, and allow motion in browser settings.<br/>
+        On iPhone: you'll see a permission popup — tap <em>Allow</em>.
+      </div>
+      <div id="sensor-ok" class="notice" style="display:none;">
+        ✅ <strong>Motion sensor active!</strong> Accelerometer is working.
+      </div>
+
+      <div class="card">
+        <div class="card-label">Audiobook URL</div>
+        <input type="text" id="audio-url" placeholder="Paste direct MP3 URL from archive.org …"/>
+        <input type="text" id="audio-title" placeholder="Book title (e.g. Sherlock Holmes)" style="margin-top:8px;"/>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Session Settings</div>
+        <div class="input-row">
+          <div class="input-group">
+            <label>Target distance (km)</label>
+            <input type="number" id="target-input" value="5" min="1" max="42" step="0.5"/>
+          </div>
+          <div class="input-group">
+            <label>Pause after (seconds)</label>
+            <input type="number" id="stop-threshold-main" value="3" min="1" max="10" step="1"/>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:5px;">
+            Step sensitivity — <span id="sens-label">Medium</span>
+          </label>
+          <input type="range" id="sensitivity" min="1" max="5" value="3" oninput="updateSensLabel(this.value)"/>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px;">
+            <span>More sensitive</span><span>Less sensitive</span>
+          </div>
+        </div>
+        <div style="background:#0c1a2e;border:1px solid #1e3a5f;border-radius:10px;padding:10px 12px;margin-top:12px;">
+          <div style="font-size:10px;color:var(--blue);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">🧠 Weinberg adaptive stride</div>
+          <code>step_length = K × ⁴√(a_max − a_min)</code>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Auto-adjusts every step. No setup needed.</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="startSession()">🚀 Start Jogging</button>
+      <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:10px;">
+        No URL? Go to <strong style="color:var(--blue)">📚 Books</strong> tab for free audiobooks.
+      </p>
+
+      <!-- Live sensor debug — shown on setup screen -->
+      <div class="card" style="margin-top:12px;">
+        <div class="card-label">Sensor Test (hold phone, shake it)</div>
+        <div class="debug-box">
+          X: <span class="debug-val" id="dbg-x">—</span> &nbsp;
+          Y: <span class="debug-val" id="dbg-y">—</span> &nbsp;
+          Z: <span class="debug-val" id="dbg-z">—</span><br/>
+          Magnitude: <span class="debug-val" id="dbg-mag">—</span> m/s²<br/>
+          Events received: <span class="debug-val" id="dbg-count">0</span>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:6px;">
+          If these values stay at — after shaking, your browser is blocking the sensor.<br/>
+          Try: Chrome → ⋮ menu → Site settings → Motion sensors → Allow
+        </p>
+      </div>
+    </div>
+
+    <!-- SESSION VIEW -->
+    <div id="session-view" style="display:none;">
+      <div class="status-row">
+        <div class="dot dot-waiting" id="motion-dot"></div>
+        <span class="status-txt" id="motion-status">Waiting for motion…</span>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-val" id="s-dist">0.00</div><div class="stat-lbl">km done</div></div>
+        <div class="stat-card"><div class="stat-val" id="s-steps">0</div><div class="stat-lbl">steps</div></div>
+        <div class="stat-card"><div class="stat-val" id="s-time">00:00</div><div class="stat-lbl">time</div></div>
+      </div>
+
+      <div class="stat-grid-4">
+        <div class="stat-card-sm"><div class="stat-val-sm" id="s-stride">—</div><div class="stat-lbl-sm">stride m</div></div>
+        <div class="stat-card-sm"><div class="stat-val-sm" id="s-cadence">—</div><div class="stat-lbl-sm">spm</div></div>
+        <div class="stat-card-sm"><div class="stat-val-sm" id="s-pace">—</div><div class="stat-lbl-sm">min/km</div></div>
+        <div class="stat-card-sm"><div class="stat-val-sm" id="s-k">—</div><div class="stat-lbl-sm">K factor</div></div>
+      </div>
+
+      <div class="prog-wrap">
+        <div class="prog-label"><span>Progress</span><span id="prog-text">0.00 / 5.00 km</span></div>
+        <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      </div>
+
+      <div class="motion-bar-wrap">
+        <div class="motion-label">
+          <span>Acceleration magnitude (m/s²)</span>
+          <span id="accel-val">0.00</span>
+        </div>
+        <div class="motion-bg"><div class="motion-fill" id="motion-fill" style="width:0%"></div></div>
+      </div>
+
+      <div class="milestone" id="milestone-banner">
+        <div class="milestone-txt" id="milestone-txt"></div>
+        <div class="milestone-sub" id="milestone-sub"></div>
+      </div>
+
+      <div class="player-card">
+        <div class="now-tag">🎧 Now playing</div>
+        <div class="book-title" id="player-title">—</div>
+        <audio id="audio-player" controls preload="auto">Your browser does not support audio.</audio>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+          <span style="font-size:11px;color:var(--muted)">Auto-pauses when you stop</span>
+          <button class="btn-sm" onclick="toggleManual()" id="manual-btn">Manual mode</button>
+        </div>
+      </div>
+
+      <button class="btn btn-danger" onclick="endSession()">⏹ End Session</button>
+    </div>
+
+    <!-- FINISH VIEW -->
+    <div id="finish-view" style="display:none;text-align:center;padding:30px 10px;">
+      <div style="font-size:48px;margin-bottom:12px;">🎉</div>
+      <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#e0e7ff;margin-bottom:12px;">Session Complete!</div>
+      <div class="stat-grid" style="margin-bottom:10px;">
+        <div class="stat-card"><div class="stat-val" id="f-dist">—</div><div class="stat-lbl">km</div></div>
+        <div class="stat-card"><div class="stat-val" id="f-steps">—</div><div class="stat-lbl">steps</div></div>
+        <div class="stat-card"><div class="stat-val" id="f-time">—</div><div class="stat-lbl">time</div></div>
+      </div>
+      <div class="stat-grid-4" style="margin-bottom:16px;">
+        <div class="stat-card-sm"><div class="stat-val-sm" id="f-stride">—</div><div class="stat-lbl-sm">avg stride</div></div>
+        <div class="stat-card-sm"><div class="stat-val-sm" id="f-cadence">—</div><div class="stat-lbl-sm">avg spm</div></div>
+        <div class="stat-card-sm"><div class="stat-val-sm" id="f-pace">—</div><div class="stat-lbl-sm">avg pace</div></div>
+        <div class="stat-card-sm"><div class="stat-val-sm" id="f-k">—</div><div class="stat-lbl-sm">final K</div></div>
+      </div>
+      <button class="btn btn-primary" onclick="resetSession()">Start New Session</button>
+    </div>
+  </div>
+
+  <!-- ═══ BOOKS TAB ═══ -->
+  <div class="panel" id="tab-books">
+
+    <!-- Search bar -->
+    <div style="display:flex;gap:8px;margin:8px 0 12px;">
+      <input type="text" id="book-search" placeholder="Search LibriVox... (e.g. Sherlock Holmes)"
+             style="flex:1;" onkeydown="if(event.key==='Enter')searchBooks()"/>
+      <button onclick="searchBooks()" style="padding:10px 16px;border-radius:10px;border:1px solid var(--blue);
+              background:#0c1a2e;color:var(--blue);font-family:DM Sans,sans-serif;font-size:14px;cursor:pointer;">
+        Search
+      </button>
+    </div>
+
+    <!-- Status -->
+    <div id="search-status" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
+
+    <!-- Book results -->
+    <div id="book-results"></div>
+
+    <!-- Chapter list -->
+    <div id="chapter-view" style="display:none;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <button onclick="backToResults()" style="padding:7px 14px;border-radius:20px;border:1px solid var(--border);
+                background:var(--surface);color:var(--muted);font-family:DM Sans,sans-serif;cursor:pointer;">
+          ← Back
+        </button>
+        <div id="chapter-book-title" style="font-size:14px;font-weight:500;color:var(--text);"></div>
+      </div>
+      <div id="chapter-list"></div>
+    </div>
+
+    <div id="book-pagination" style="display:flex;gap:8px;justify-content:center;margin:12px 0;"></div>
+  </div>
+
+  <!-- ═══ SETTINGS TAB ═══ -->
+  <div class="panel" id="tab-settings">
+    <div class="section-title">Motion Detection</div>
+    <div class="card">
+      <div class="card-label">Stop threshold (seconds)</div>
+      <input type="number" id="stop-threshold" value="3" min="1" max="10" step="1"/>
+      <p style="font-size:11px;color:var(--muted);margin-top:6px;">Audiobook pauses after you've been still for this many seconds.</p>
+      <hr style="margin:12px 0;"/>
+      <div class="card-label">Step Sensitivity</div>
+      <input type="range" id="sensitivity2" min="1" max="5" value="3" oninput="syncSens(this.value)"/>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:3px;">
+        <span>More sensitive</span><span>Less sensitive</span>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:8px;">
+        Audio keeps pausing mid-jog → move left.<br/>
+        Plays while standing still → move right.
+      </p>
+    </div>
+
+    <div class="section-title">Weinberg K Factor</div>
+    <div class="card">
+      <div class="card-label">Initial K value (default: 0.45)</div>
+      <input type="number" id="k-override" value="0.45" min="0.3" max="0.7" step="0.01"/>
+      <p style="font-size:11px;color:var(--muted);margin-top:6px;">
+        <code>step_length = K × ⁴√(a_max − a_min)</code><br/>
+        K self-calibrates automatically. Adjust if distance feels consistently off.
+      </p>
+    </div>
+
+    <div class="section-title">Sensor Troubleshooting</div>
+    <div class="card">
+      <p style="font-size:13px;color:var(--muted);line-height:1.7;">
+        <strong style="color:var(--text)">Android Chrome:</strong><br/>
+        Tap ⋮ → Site settings → Motion sensors → Allow<br/><br/>
+        <strong style="color:var(--text)">Samsung Internet:</strong><br/>
+        Settings → Sites and downloads → Motion and orientation → On<br/><br/>
+        <strong style="color:var(--text)">iPhone Safari:</strong><br/>
+        Settings → Safari → Motion & Orientation Access → On<br/><br/>
+        <strong style="color:var(--text)">All browsers:</strong><br/>
+        Must be on HTTP (not HTTPS) for local network access. The Streamlit URL starting with <code>http://192.168.x.x:8501</code> is correct.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let steps = 0, distKm = 0, startTime = null, timerInterval = null;
+let targetKm = 5, stopDelaySec = 3, manualMode = false, sessionActive = false;
+let lastMovedTime = Date.now(), isMoving = false;
+let motionThreshold = 2.5;
+
+// Weinberg
+const WINDOW = 20;
+let accelBuffer = [];
+let stepPeakMax = 0, stepPeakMin = Infinity;
+let stepCooldown = false, lastAccelMag = 0;
+let K = 0.45;
+const K_LEARN = 0.06, K_MIN = 0.28, K_MAX = 0.70;
+let stepTimes = [], stepLengths = [];
+
+// Debug counter
+let motionEventCount = 0;
+let sensorDetected = false;
+
+const MILESTONES = [
+  { km:1,  txt:"🏅 1 KM DOWN!",           sub:"Keep going — legs are warmed up now." },
+  { km:2,  txt:"🔥 2 KM!",                sub:"Halfway to halfway. You're doing great." },
+  { km:3,  txt:"⚡ 3 KM — OVER HALFWAY!", sub:"The hardest part is behind you." },
+  { km:4,  txt:"🚀 4 KM! ONE TO GO!",     sub:"One kilometre left. Finish strong." },
+  { km:5,  txt:"🎉 5 KM COMPLETE!",       sub:"You did it. Every single step counted." },
+];
+let lastMilestone = 0;
+const audio = document.getElementById('audio-player');
+
+// ═══════════════════════════════════════════════════════════
+// SENSOR INIT — runs immediately on page load
+// Try to start listening right away so the debug panel works
+// ═══════════════════════════════════════════════════════════
+function initSensor() {
+  if (typeof DeviceMotionEvent === 'undefined') {
+    showSensorError('DeviceMotionEvent not available — make sure you are on https:// not http://');
+    return;
+  }
+  // iOS 13+ requires explicit permission
+  if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    // Will request on user gesture (Start button) — just note it
+    document.getElementById('sensor-warning').innerHTML =
+      '📱 <strong>iPhone detected.</strong> You\'ll see a permission popup when you tap Start. Tap <em>Allow</em>.';
+    window.addEventListener('devicemotion', handleDebugMotion);
+  } else {
+    // Android / desktop — start immediately
+    window.addEventListener('devicemotion', handleDebugMotion);
+    // Check after 2s if we got any events
+    setTimeout(() => {
+      if (!sensorDetected) {
+        document.getElementById('sensor-warning').innerHTML =
+          '⚠️ <strong>No motion events received yet.</strong><br/>' +
+          'Try: Chrome ⋮ → Site settings → Motion sensors → Allow<br/>' +
+          'Or try shaking your phone — if values below stay at —, the sensor is blocked.';
+      }
+    }, 2000);
+  }
+}
+
+function handleDebugMotion(e) {
+  const a = e.accelerationIncludingGravity || e.acceleration;
+  if (!a) return;
+  motionEventCount++;
+  const x = (a.x||0), y = (a.y||0), z = (a.z||0);
+  const mag = Math.sqrt(x*x + y*y + z*z);
+
+  if (!sensorDetected && mag > 0.1) {
+    sensorDetected = true;
+    document.getElementById('sensor-warning').style.display = 'none';
+    const ok = document.getElementById('sensor-ok');
+    ok.style.display = 'block';
+    ok.className = 'notice notice-green';
+  }
+
+  // Update debug panel
+  document.getElementById('dbg-x').textContent     = x.toFixed(2);
+  document.getElementById('dbg-y').textContent     = y.toFixed(2);
+  document.getElementById('dbg-z').textContent     = z.toFixed(2);
+  document.getElementById('dbg-mag').textContent   = mag.toFixed(2);
+  document.getElementById('dbg-count').textContent = motionEventCount;
+
+  // Also feed into session if active
+  if (sessionActive) processMotion(a, mag);
+}
+
+function showSensorError(msg) {
+  const w = document.getElementById('sensor-warning');
+  w.className = 'notice notice-red';
+  w.style.display = 'block';
+  w.innerHTML = '❌ ' + msg;
+}
+
+// ═══════════════════════════════════════════════════════════
+// CORE MOTION PROCESSING (shared between debug + session)
+// ═══════════════════════════════════════════════════════════
+function processMotion(a, mag) {
+  // Track peak/trough in rolling window
+  accelBuffer.push(mag);
+  if (accelBuffer.length > WINDOW) accelBuffer.shift();
+  if (mag > stepPeakMax) stepPeakMax = mag;
+  if (mag < stepPeakMin) stepPeakMin = mag;
+
+  const delta = Math.abs(mag - lastAccelMag);
+  lastAccelMag = mag;
+
+  // Motion bar
+  const barPct = Math.min(mag / 25 * 100, 100);
+  document.getElementById('motion-fill').style.width = barPct + '%';
+  document.getElementById('accel-val').textContent = mag.toFixed(2);
+
+  // Step detection
+  if (delta > motionThreshold && !stepCooldown) {
+    const now = Date.now();
+    // Weinberg stride
+    const strideM = K * Math.pow(Math.max(stepPeakMax - stepPeakMin, 0.01), 0.25);
+    stepPeakMax = mag; stepPeakMin = mag;
+
+    steps++;
+    distKm += strideM / 1000;
+
+    stepTimes.push(now);
+    stepLengths.push(strideM);
+    if (stepTimes.length > 12) { stepTimes.shift(); stepLengths.shift(); }
+
+    let cadenceSpm = 0;
+    if (stepTimes.length >= 2) {
+      const span = (stepTimes[stepTimes.length-1] - stepTimes[0]) / 1000;
+      cadenceSpm = Math.round((stepTimes.length-1) / span * 60);
+    }
+    adaptK(strideM, cadenceSpm);
+
+    stepCooldown = true;
+    setTimeout(() => { stepCooldown = false; }, 250);
+
+    lastMovedTime = now;
+    updateStats(strideM, cadenceSpm);
+    checkMilestones();
+
+    if (!isMoving) {
+      isMoving = true;
+      setStatus('moving', 'Moving — audiobook playing');
+      playAudio();
+    }
+  }
+
+  // Stop detection
+  if (isMoving && (Date.now() - lastMovedTime) / 1000 >= stopDelaySec) {
+    isMoving = false;
+    setStatus('stopped', `Paused — ${stopDelaySec}s without movement`);
+    pauseAudio();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// WEINBERG SELF-CALIBRATION
+// ═══════════════════════════════════════════════════════════
+function adaptK(strideM, cadenceSpm) {
+  if (cadenceSpm < 80 || cadenceSpm > 230 || strideM < 0.1) return;
+  const expected = Math.min(Math.max(0.006 * cadenceSpm + 0.02, 0.35), 1.20);
+  const correction = expected / strideM;
+  K = K * (1 - K_LEARN) + K * correction * K_LEARN;
+  K = Math.min(Math.max(K, K_MIN), K_MAX);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SESSION CONTROL
+// ═══════════════════════════════════════════════════════════
+function startSession() {
+  const url   = document.getElementById('audio-url').value.trim();
+  const title = document.getElementById('audio-title').value.trim() || url;
+  targetKm     = parseFloat(document.getElementById('target-input').value) || 5;
+  stopDelaySec = parseInt(document.getElementById('stop-threshold-main').value) || 3;
+  motionThreshold = sensToThreshold(parseInt(document.getElementById('sensitivity').value));
+  K = parseFloat(document.getElementById('k-override').value) || 0.45;
+
+  if (url) {
+    // Route through local proxy to avoid CORS
+    const proxyUrl = url.startsWith('http') ? '/proxy?url=' + encodeURIComponent(url) : url;
+    audio.src = proxyUrl;
+    audio.load();
+    document.getElementById('player-title').textContent = title;
+  }
+  else { document.getElementById('player-title').textContent = 'No URL — step tracking only'; }
+
+  steps = 0; distKm = 0; lastMilestone = 0;
+  accelBuffer = []; stepPeakMax = 0; stepPeakMin = Infinity;
+  stepTimes = []; stepLengths = [];
+  startTime = Date.now(); sessionActive = true;
+  isMoving = false; lastMovedTime = Date.now();
+
+  document.getElementById('setup-view').style.display = 'none';
+  document.getElementById('session-view').style.display = 'block';
+  timerInterval = setInterval(updateClock, 1000);
+
+  // iOS: request permission now (user gesture)
+  if (typeof DeviceMotionEvent !== 'undefined' &&
+      typeof DeviceMotionEvent.requestPermission === 'function') {
+    DeviceMotionEvent.requestPermission().then(state => {
+      if (state === 'granted') {
+        window.addEventListener('devicemotion', handleDebugMotion);
+      } else {
+        setStatus('stopped', 'Motion permission denied — enable in Safari settings');
+      }
+    }).catch(() => setStatus('stopped', 'Motion permission error'));
+  }
+  // Android already listening via handleDebugMotion → processMotion
+  setStatus('waiting', 'Waiting for motion…');
+}
+
+function endSession() { finishSession(); }
+function finishSession() {
+  sessionActive = false;
+  clearInterval(timerInterval);
+  audio.pause();
+  const sec = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+  const mt = t => Math.floor(t/60).toString().padStart(2,'0') + ':' + Math.floor(t%60).toString().padStart(2,'0');
+  document.getElementById('f-dist').textContent  = distKm.toFixed(2);
+  document.getElementById('f-steps').textContent = steps;
+  document.getElementById('f-time').textContent  = mt(sec);
+  const avgStride = stepLengths.length ? (stepLengths.reduce((a,b)=>a+b,0)/stepLengths.length).toFixed(2) : '—';
+  document.getElementById('f-stride').textContent  = avgStride;
+  document.getElementById('f-cadence').textContent = steps > 0 && sec > 0 ? Math.round(steps/sec*60) : '—';
+  document.getElementById('f-pace').textContent    = distKm > 0 && sec > 0 ? mt(sec/distKm) : '—';
+  document.getElementById('f-k').textContent       = K.toFixed(3);
+  document.getElementById('session-view').style.display = 'none';
+  document.getElementById('finish-view').style.display  = 'block';
+}
+
+function resetSession() {
+  document.getElementById('finish-view').style.display = 'none';
+  document.getElementById('setup-view').style.display  = 'block';
+  audio.src = '';
+  steps = 0; distKm = 0; startTime = null;
+  isMoving = false; sessionActive = false;
+  stepTimes = []; stepLengths = [];
+  accelBuffer = []; stepPeakMax = 0; stepPeakMin = Infinity;
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════════════════════
+function playAudio() {
+  if (manualMode || !audio.src || audio.src === window.location.href) return;
+  audio.play().catch(() => {});
+}
+function pauseAudio() { if (!manualMode) audio.pause(); }
+function toggleManual() {
+  manualMode = !manualMode;
+  document.getElementById('manual-btn').textContent = manualMode ? 'Auto mode' : 'Manual mode';
+  document.getElementById('manual-btn').style.color = manualMode ? 'var(--blue)' : '';
+}
+
+// ═══════════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════════
+function setStatus(state, msg) {
+  const dot = document.getElementById('motion-dot');
+  dot.className = 'dot ' + (state==='moving' ? 'dot-moving' : state==='stopped' ? 'dot-stopped' : 'dot-waiting');
+  document.getElementById('motion-status').textContent = msg;
+}
+function updateStats(lastStride, cadenceSpm) {
+  document.getElementById('s-dist').textContent   = distKm.toFixed(2);
+  document.getElementById('s-steps').textContent  = steps;
+  document.getElementById('prog-fill').style.width = Math.min(distKm/targetKm*100,100).toFixed(1)+'%';
+  document.getElementById('prog-text').textContent = distKm.toFixed(2)+' / '+targetKm.toFixed(1)+' km';
+  if (lastStride)   document.getElementById('s-stride').textContent  = lastStride.toFixed(2);
+  if (cadenceSpm>0) document.getElementById('s-cadence').textContent = cadenceSpm;
+  const sec = (Date.now() - startTime) / 1000;
+  if (distKm > 0.05) {
+    const ps = sec / distKm;
+    document.getElementById('s-pace').textContent = Math.floor(ps/60)+':'+Math.floor(ps%60).toString().padStart(2,'0');
+  }
+  document.getElementById('s-k').textContent = K.toFixed(3);
+}
+function updateClock() {
+  if (!startTime) return;
+  const sec = Math.floor((Date.now()-startTime)/1000);
+  document.getElementById('s-time').textContent =
+    Math.floor(sec/60).toString().padStart(2,'0')+':'+Math.floor(sec%60).toString().padStart(2,'0');
+}
+function checkMilestones() {
+  for (const m of MILESTONES) {
+    if (distKm >= m.km && lastMilestone < m.km) {
+      lastMilestone = m.km;
+      document.getElementById('milestone-txt').textContent = m.txt;
+      document.getElementById('milestone-sub').textContent = m.sub;
+      const b = document.getElementById('milestone-banner');
+      b.classList.add('show');
+      setTimeout(() => b.classList.remove('show'), 5000);
+      speak(m.txt.replace(/[🏅🔥⚡🚀🎉]/g,'') + ' ' + m.sub);
+      if (m.km >= targetKm) setTimeout(finishSession, 3000);
+    }
+  }
+}
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  const wasPlaying = !audio.paused;
+  audio.pause();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.onend = () => { if (wasPlaying && isMoving) audio.play().catch(()=>{}); };
+  window.speechSynthesis.speak(utt);
+}
+function showTab(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  el.classList.add('active');
+}
+function sensToThreshold(s) { return {1:1.0,2:1.6,3:2.5,4:3.8,5:5.5}[s]||2.5; }
+function updateSensLabel(v) {
+  document.getElementById('sens-label').textContent = {1:'Very high',2:'High',3:'Medium',4:'Low',5:'Very low'}[v]||'Medium';
+}
+function syncSens(v) {
+  document.getElementById('sensitivity').value = document.getElementById('sensitivity2').value = v;
+  updateSensLabel(v);
+  motionThreshold = sensToThreshold(parseInt(v));
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// LIBRIVOX BROWSER
+// ═══════════════════════════════════════════════════════════
+let currentPage = 1;
+let currentQuery = '';
+let lastResults = [];
+
+async function searchBooks(page) {
+  page = page || 1;
+  const q = document.getElementById('book-search').value.trim();
+  if (!q) { document.getElementById('search-status').textContent = 'Type a book name to search.'; return; }
+  currentQuery = q;
+  currentPage = page;
+  document.getElementById('search-status').textContent = 'Searching LibriVox...';
+  document.getElementById('book-results').innerHTML = '';
+  document.getElementById('book-pagination').innerHTML = '';
+  document.getElementById('chapter-view').style.display = 'none';
+
+  try {
+    const res = await fetch(`/search?q=${encodeURIComponent(q)}&page=${page}`);
+    const data = await res.json();
+    const docs = data.response?.docs || [];
+    lastResults = docs;
+    const total = data.response?.numFound || 0;
+
+    if (docs.length === 0) {
+      document.getElementById('search-status').textContent = 'No results found. Try a different title.';
+      return;
+    }
+    document.getElementById('search-status').textContent = `${total.toLocaleString()} books found — showing page ${page}`;
+    renderBooks(docs);
+    renderPagination(total, page);
+  } catch(e) {
+    document.getElementById('search-status').textContent = 'Search failed: ' + e.message;
+  }
+}
+
+function renderBooks(docs) {
+  const el = document.getElementById('book-results');
+  el.innerHTML = docs.map((b,i) => {
+    const title = b.title || 'Unknown Title';
+    const author = Array.isArray(b.creator) ? b.creator.join(', ') : (b.creator || 'Unknown Author');
+    const id = b.identifier;
+    return `<div onclick="loadChapters('${id}','${title.replace(/'/g,"\'")}','${author.replace(/'/g,"\'")}') "
+      style="background:var(--surface);border:1px solid var(--border);border-radius:14px;
+             padding:13px 14px;margin:6px 0;cursor:pointer;transition:border-color .2s;"
+      onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;">${title}</div>
+      <div style="font-size:12px;color:var(--muted);">by ${author}</div>
+      <div style="font-size:11px;color:var(--blue);margin-top:5px;">Tap to see chapters →</div>
+    </div>`;
+  }).join('');
+}
+
+function renderPagination(total, page) {
+  const rows = 12;
+  const pages = Math.ceil(total / rows);
+  if (pages <= 1) return;
+  const el = document.getElementById('book-pagination');
+  let html = '';
+  if (page > 1) html += `<button onclick="searchBooks(${page-1})" style="padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;font-family:DM Sans,sans-serif;">← Prev</button>`;
+  html += `<span style="font-size:13px;color:var(--muted);padding:7px 4px;">Page ${page} of ${pages}</span>`;
+  if (page < pages) html += `<button onclick="searchBooks(${page+1})" style="padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;font-family:DM Sans,sans-serif;">Next →</button>`;
+  el.innerHTML = html;
+}
+
+async function loadChapters(id, title, author) {
+  document.getElementById('book-results').style.display = 'none';
+  document.getElementById('book-pagination').style.display = 'none';
+  document.getElementById('search-status').textContent = 'Loading chapters...';
+  document.getElementById('chapter-view').style.display = 'block';
+  document.getElementById('chapter-book-title').textContent = title + ' — ' + author;
+  document.getElementById('chapter-list').innerHTML = '<div style="color:var(--muted);font-size:13px;">Fetching chapters...</div>';
+
+  try {
+    const res = await fetch(`/metadata?id=${id}`);
+    const data = await res.json();
+    const files = data.files || [];
+
+    // Filter only mp3 files, exclude zip and other formats
+    const mp3s = files.filter(f =>
+      f.name && f.name.toLowerCase().endsWith('.mp3') &&
+      !f.name.toLowerCase().includes('_64kb') &&
+      (f.format === 'MP3' || f.source === 'original' || !f.format)
+    ).sort((a,b) => (a.name > b.name ? 1 : -1));
+
+    // If too many dupes, prefer 128kb or original
+    const chapters = mp3s.length > 0 ? mp3s : files.filter(f => f.name?.endsWith('.mp3'));
+
+    if (chapters.length === 0) {
+      document.getElementById('chapter-list').innerHTML = '<div style="color:var(--red);font-size:13px;">No MP3 chapters found for this book.</div>';
+      return;
+    }
+
+    document.getElementById('search-status').textContent = `${chapters.length} chapters found`;
+
+    // Play all button
+    const firstUrl = `https://archive.org/download/${id}/${chapters[0].name}`;
+    let html = `<div onclick="selectBook('${firstUrl}','${title.replace(/'/g,"\'")} (Full Book)')"
+      style="background:#0c1a2e;border:1px solid var(--blue);border-radius:12px;padding:12px 14px;
+             margin-bottom:10px;cursor:pointer;">
+      <div style="font-size:14px;font-weight:600;color:var(--blue);">▶ Play from Chapter 1</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">Starts at the beginning · ${chapters.length} chapters total</div>
+    </div>`;
+
+    // Individual chapters
+    html += chapters.map((f, i) => {
+      const url = `https://archive.org/download/${id}/${f.name}`;
+      const name = f.title || f.name.replace(/\.mp3$/i,'').replace(/_/g,' ');
+      const dur = f.length ? formatDur(parseInt(f.length)) : '';
+      return `<div onclick="selectBook('${url}','${(title+' — '+name).replace(/'/g,"\'")}') "
+        style="background:var(--surface);border:1px solid var(--border);border-radius:11px;
+               padding:11px 13px;margin:5px 0;cursor:pointer;display:flex;justify-content:space-between;align-items:center;"
+        onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div>
+          <div style="font-size:13px;color:var(--text);font-weight:500;">Ch ${i+1}: ${name}</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);flex-shrink:0;margin-left:8px;">${dur}</div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('chapter-list').innerHTML = html;
+  } catch(e) {
+    document.getElementById('chapter-list').innerHTML = `<div style="color:var(--red);font-size:13px;">Error: ${e.message}</div>`;
+  }
+}
+
+function formatDur(secs) {
+  if (!secs || isNaN(secs)) return '';
+  const m = Math.floor(secs/60), s = secs%60;
+  return m + ':' + s.toString().padStart(2,'0');
+}
+
+function selectBook(url, title) {
+  // Fill into Play tab and switch to it
+  document.getElementById('audio-url').value = url;
+  document.getElementById('audio-title').value = title;
+  showTab('play', document.querySelectorAll('.tab')[0]);
+  document.getElementById('search-status').textContent = '';
+  window.scrollTo(0,0);
+}
+
+function backToResults() {
+  document.getElementById('chapter-view').style.display = 'none';
+  document.getElementById('book-results').style.display = 'block';
+  document.getElementById('book-pagination').style.display = 'flex';
+  document.getElementById('search-status').textContent = `Showing results for "${currentQuery}"`;
+}
+
+// ── Start sensor immediately on page load ──
+initSensor();
+</script>
+</body>
+</html>
